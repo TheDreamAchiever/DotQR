@@ -31,7 +31,8 @@ and even add your own logo — all in a single HTML file.
 3. Enter URL, customize, download
 
 ## Live Demo
-
+## Live Demo
+🔗 [Try DotQR Live](https://thedreamachiever.github.io/DotQR/)
 > Coming soon / GitHub Pages link here
 
 ## License
