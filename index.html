@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>DotQR — Unique QR Generator</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;700;800&display=swap" rel="stylesheet"/>
+<script src="https://unpkg.com/qr-code-styling@1.6.0-rc.1/lib/qr-code-styling.js"></script>
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #13131a;
+    --border: #1e1e2e;
+    --accent1: #ff6b6b;
+    --accent2: #ffd93d;
+    --accent3: #6bcb77;
+    --accent4: #4d96ff;
+    --text: #f0f0f0;
+    --muted: #555570;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 40px 20px;
+    gap: 28px;
+  }
+
+  header { text-align: center; }
+
+  h1 {
+    font-size: 3.2rem;
+    font-weight: 800;
+    letter-spacing: -3px;
+    background: linear-gradient(135deg, #ff6b6b 0%, #ffd93d 50%, #4d96ff 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .sub {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--muted);
+    letter-spacing: 3px;
+    margin-top: 4px;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    padding: 28px;
+    width: 100%;
+    max-width: 520px;
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+  }
+
+  .field label {
+    display: block;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.68rem;
+    letter-spacing: 2.5px;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+
+  input[type="text"] {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 13px 16px;
+    color: var(--text);
+    font-family: 'Space Mono', monospace;
+    font-size: 0.88rem;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  input[type="text"]:focus { border-color: var(--accent4); }
+
+  /* Dot style grid */
+  .dot-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 8px;
+  }
+
+  .opt-btn {
+    background: var(--bg);
+    border: 2px solid var(--border);
+    border-radius: 12px;
+    padding: 10px 4px 8px;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.18s;
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+  }
+  .opt-btn svg { display: block; margin: 0 auto 5px; }
+  .opt-btn:hover { border-color: var(--accent4); }
+  .opt-btn.active { border-color: var(--accent2); background: rgba(255,217,61,0.07); }
+
+  /* Corner style */
+  .corner-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+
+  /* Color themes */
+  .theme-row {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .theme-dot {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    cursor: pointer;
+    border: 3px solid transparent;
+    transition: all 0.2s;
+    position: relative;
+  }
+  .theme-dot.active {
+    border-color: white;
+    transform: scale(1.18);
+    box-shadow: 0 0 12px rgba(255,255,255,0.3);
+  }
+
+  /* Logo upload */
+  .logo-upload {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .upload-btn {
+    background: var(--bg);
+    border: 2px dashed var(--border);
+    border-radius: 12px;
+    padding: 10px 18px;
+    color: var(--muted);
+    font-family: 'Space Mono', monospace;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+  .upload-btn:hover { border-color: var(--accent4); color: var(--accent4); }
+
+  #logoPreview {
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    object-fit: contain;
+    display: none;
+    border: 1px solid var(--border);
+    background: var(--bg);
+  }
+
+  .clear-logo {
+    background: none;
+    border: none;
+    color: var(--accent1);
+    font-size: 1.1rem;
+    cursor: pointer;
+    display: none;
+    padding: 4px;
+  }
+
+  /* Generate button */
+  .gen-btn {
+    width: 100%;
+    padding: 16px;
+    border-radius: 14px;
+    border: none;
+    background: linear-gradient(135deg, #ff6b6b, #4d96ff);
+    color: white;
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 1rem;
+    cursor: pointer;
+    letter-spacing: 1px;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+  .gen-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(77,150,255,0.3); }
+  .gen-btn:active { transform: translateY(0); }
+
+  /* Preview */
+  .preview-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+  }
+
+  #qr-output {
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 0 60px rgba(77,150,255,0.12), 0 0 0 1px var(--border);
+    background: white;
+    min-width: 300px;
+    min-height: 300px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  #qr-output canvas, #qr-output svg {
+    border-radius: 16px;
+  }
+
+  .placeholder-text {
+    color: #ccc;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.8rem;
+    padding: 60px 40px;
+    text-align: center;
+  }
+
+  .dl-row {
+    display: flex;
+    gap: 10px;
+  }
+
+  .dl-btn {
+    padding: 11px 24px;
+    border-radius: 12px;
+    border: 2px solid var(--accent3);
+    background: transparent;
+    color: var(--accent3);
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: none;
+  }
+  .dl-btn:hover { background: var(--accent3); color: #0a0a0f; }
+
+  .dl-btn.svg-btn {
+    border-color: var(--accent4);
+    color: var(--accent4);
+  }
+  .dl-btn.svg-btn:hover { background: var(--accent4); color: white; }
+
+  input[type="file"] { display: none; }
+
+  /* size slider */
+  input[type="range"] {
+    -webkit-appearance: none;
+    width: 100%;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--border);
+    outline: none;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--accent4);
+    cursor: pointer;
+  }
+
+  .slider-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .slider-val {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.78rem;
+    color: var(--accent4);
+    min-width: 36px;
+    text-align: right;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>DotQR</h1>
+  <p class="sub">UNIQUE • SCANNABLE • YOURS</p>
+</header>
+
+<div class="card">
+
+  <!-- URL Input -->
+  <div class="field">
+    <label>URL / TEXT</label>
+    <input type="text" id="urlInput" placeholder="https://yourwebsite.com"/>
+  </div>
+
+  <!-- Dot Style -->
+  <div class="field">
+    <label>DOT STYLE</label>
+    <div class="dot-grid" id="dotStyleGrid">
+      <div class="opt-btn active" data-val="dots">
+        <svg width="28" height="28" viewBox="0 0 28 28"><circle cx="7" cy="7" r="4" fill="#4d96ff"/><circle cx="21" cy="7" r="4" fill="#ff6b6b"/><circle cx="7" cy="21" r="4" fill="#ffd93d"/><circle cx="21" cy="21" r="4" fill="#6bcb77"/></svg>
+        DOTS
+      </div>
+      <div class="opt-btn" data-val="rounded">
+        <svg width="28" height="28" viewBox="0 0 28 28"><rect x="2" y="2" width="10" height="10" rx="3" fill="#4d96ff"/><rect x="16" y="2" width="10" height="10" rx="3" fill="#ff6b6b"/><rect x="2" y="16" width="10" height="10" rx="3" fill="#ffd93d"/><rect x="16" y="16" width="10" height="10" rx="3" fill="#6bcb77"/></svg>
+        ROUNDED
+      </div>
+      <div class="opt-btn" data-val="classy">
+        <svg width="28" height="28" viewBox="0 0 28 28"><rect x="2" y="2" width="10" height="10" fill="#4d96ff"/><rect x="16" y="2" width="10" height="10" fill="#ff6b6b"/><rect x="2" y="16" width="10" height="10" fill="#ffd93d"/><rect x="16" y="16" width="10" height="10" fill="#6bcb77"/></svg>
+        SQUARE
+      </div>
+      <div class="opt-btn" data-val="classy-rounded">
+        <svg width="28" height="28" viewBox="0 0 28 28"><rect x="2" y="2" width="10" height="10" rx="5" fill="#4d96ff"/><rect x="16" y="2" width="10" height="10" rx="5" fill="#ff6b6b"/><rect x="2" y="16" width="10" height="10" rx="5" fill="#ffd93d"/><rect x="16" y="16" width="10" height="10" rx="5" fill="#6bcb77"/></svg>
+        CLASSY
+      </div>
+      <div class="opt-btn" data-val="extra-rounded">
+        <svg width="28" height="28" viewBox="0 0 28 28"><rect x="2" y="2" width="10" height="10" rx="5" fill="#4d96ff"/><rect x="16" y="2" width="10" height="10" rx="5" fill="#ff6b6b"/><rect x="2" y="16" width="10" height="10" rx="5" fill="#ffd93d"/><rect x="16" y="16" width="10" height="10" rx="5" fill="#6bcb77"/></svg>
+        PILL
+      </div>
+    </div>
+  </div>
+
+  <!-- Corner Style -->
+  <div class="field">
+    <label>CORNER STYLE</label>
+    <div class="corner-grid" id="cornerGrid">
+      <div class="opt-btn active" data-val="square">
+        <svg width="28" height="14" viewBox="0 0 28 14"><rect x="1" y="1" width="12" height="12" fill="none" stroke="#4d96ff" stroke-width="2"/><rect x="15" y="1" width="12" height="12" fill="none" stroke="#ff6b6b" stroke-width="2"/></svg>
+        SQUARE
+      </div>
+      <div class="opt-btn" data-val="extra-rounded">
+        <svg width="28" height="14" viewBox="0 0 28 14"><rect x="1" y="1" width="12" height="12" rx="6" fill="none" stroke="#4d96ff" stroke-width="2"/><rect x="15" y="1" width="12" height="12" rx="6" fill="none" stroke="#ff6b6b" stroke-width="2"/></svg>
+        ROUND
+      </div>
+      <div class="opt-btn" data-val="dot">
+        <svg width="28" height="14" viewBox="0 0 28 14"><circle cx="7" cy="7" r="6" fill="none" stroke="#4d96ff" stroke-width="2"/><circle cx="21" cy="7" r="6" fill="none" stroke="#ff6b6b" stroke-width="2"/></svg>
+        DOT
+      </div>
+    </div>
+  </div>
+
+  <!-- Color Theme -->
+  <div class="field">
+    <label>COLOR THEME</label>
+    <div class="theme-row" id="themeRow">
+      <div class="theme-dot active" data-c1="#ff6b6b" data-c2="#4d96ff" style="background:linear-gradient(135deg,#ff6b6b,#4d96ff)"></div>
+      <div class="theme-dot" data-c1="#00f5d4" data-c2="#9b5de5" style="background:linear-gradient(135deg,#00f5d4,#9b5de5)"></div>
+      <div class="theme-dot" data-c1="#f15bb5" data-c2="#fee440" style="background:linear-gradient(135deg,#f15bb5,#fee440)"></div>
+      <div class="theme-dot" data-c1="#6bcb77" data-c2="#4d96ff" style="background:linear-gradient(135deg,#6bcb77,#4d96ff)"></div>
+      <div class="theme-dot" data-c1="#ff9a3c" data-c2="#ff6b6b" style="background:linear-gradient(135deg,#ff9a3c,#ff6b6b)"></div>
+      <div class="theme-dot" data-c1="#000000" data-c2="#333333" style="background:linear-gradient(135deg,#000,#555)"></div>
+      <div class="theme-dot" data-c1="#7b2d8b" data-c2="#ff6bcd" style="background:linear-gradient(135deg,#7b2d8b,#ff6bcd)"></div>
+      <div class="theme-dot" data-c1="#1a1a2e" data-c2="#e94560" style="background:linear-gradient(135deg,#1a1a2e,#e94560)"></div>
+    </div>
+  </div>
+
+  <!-- QR Size -->
+  <div class="field">
+    <label>QR SIZE</label>
+    <div class="slider-row">
+      <input type="range" id="sizeSlider" min="200" max="600" value="300" step="50"/>
+      <span class="slider-val" id="sizeVal">300px</span>
+    </div>
+  </div>
+
+  <!-- Logo Upload -->
+  <div class="field">
+    <label>CENTER LOGO (OPTIONAL)</label>
+    <div class="logo-upload">
+      <div class="upload-btn" onclick="document.getElementById('logoFile').click()">+ Upload Logo</div>
+      <input type="file" id="logoFile" accept="image/*"/>
+      <img id="logoPreview" src="" alt="logo"/>
+      <button class="clear-logo" id="clearLogo" title="Remove logo">✕</button>
+    </div>
+  </div>
+
+  <button class="gen-btn" id="genBtn">✦ GENERATE QR</button>
+</div>
+
+<!-- QR Preview -->
+<div class="preview-wrap">
+  <div id="qr-output">
+    <p class="placeholder-text">Enter a URL above<br/>and hit Generate ✦</p>
+  </div>
+  <div class="dl-row">
+    <button class="dl-btn" id="dlPng">↓ PNG</button>
+    <button class="dl-btn svg-btn" id="dlSvg">↓ SVG</button>
+  </div>
+</div>
+
+<script>
+  let dotStyle = 'dots';
+  let cornerStyle = 'square';
+  let color1 = '#ff6b6b';
+  let color2 = '#4d96ff';
+  let logoDataUrl = null;
+  let qrCode = null;
+
+  // Dot style
+  document.getElementById('dotStyleGrid').querySelectorAll('.opt-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.getElementById('dotStyleGrid').querySelectorAll('.opt-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      dotStyle = btn.dataset.val;
+    });
+  });
+
+  // Corner style
+  document.getElementById('cornerGrid').querySelectorAll('.opt-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.getElementById('cornerGrid').querySelectorAll('.opt-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      cornerStyle = btn.dataset.val;
+    });
+  });
+
+  // Color theme
+  document.getElementById('themeRow').querySelectorAll('.theme-dot').forEach(dot => {
+    dot.addEventListener('click', () => {
+      document.getElementById('themeRow').querySelectorAll('.theme-dot').forEach(d => d.classList.remove('active'));
+      dot.classList.add('active');
+      color1 = dot.dataset.c1;
+      color2 = dot.dataset.c2;
+    });
+  });
+
+  // Size slider
+  const sizeSlider = document.getElementById('sizeSlider');
+  const sizeVal = document.getElementById('sizeVal');
+  sizeSlider.addEventListener('input', () => {
+    sizeVal.textContent = sizeSlider.value + 'px';
+  });
+
+  // Logo upload
+  document.getElementById('logoFile').addEventListener('change', function() {
+    const file = this.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+      logoDataUrl = e.target.result;
+      document.getElementById('logoPreview').src = logoDataUrl;
+      document.getElementById('logoPreview').style.display = 'block';
+      document.getElementById('clearLogo').style.display = 'block';
+    };
+    reader.readAsDataURL(file);
+  });
+
+  document.getElementById('clearLogo').addEventListener('click', () => {
+    logoDataUrl = null;
+    document.getElementById('logoPreview').style.display = 'none';
+    document.getElementById('clearLogo').style.display = 'none';
+    document.getElementById('logoFile').value = '';
+  });
+
+  // Generate
+  document.getElementById('genBtn').addEventListener('click', generate);
+
+  function generate() {
+    const url = document.getElementById('urlInput').value.trim();
+    if (!url) {
+      alert('Bhai URL toh daalo pehle! 😄');
+      return;
+    }
+
+    const size = parseInt(sizeSlider.value);
+    const output = document.getElementById('qr-output');
+    output.innerHTML = '';
+
+    const options = {
+      width: size,
+      height: size,
+      type: 'canvas',
+      data: url,
+      margin: 16,
+      qrOptions: {
+        errorCorrectionLevel: 'M'
+      },
+      dotsOptions: {
+        type: dotStyle,
+        gradient: {
+          type: 'linear',
+          rotation: 45,
+          colorStops: [
+            { offset: 0, color: color1 },
+            { offset: 1, color: color2 }
+          ]
+        }
+      },
+      backgroundOptions: {
+        color: '#ffffff'
+      },
+      cornersSquareOptions: {
+        type: cornerStyle,
+        gradient: {
+          type: 'linear',
+          rotation: 45,
+          colorStops: [
+            { offset: 0, color: color1 },
+            { offset: 1, color: color2 }
+          ]
+        }
+      },
+      cornersDotOptions: {
+        type: cornerStyle === 'dot' ? 'dot' : 'square',
+        color: color1
+      }
+    };
+
+    if (logoDataUrl) {
+      options.image = logoDataUrl;
+      options.imageOptions = {
+        crossOrigin: 'anonymous',
+        margin: 6,
+        imageSize: 0.3
+      };
+    }
+
+    qrCode = new QRCodeStyling(options);
+    qrCode.append(output);
+
+    document.getElementById('dlPng').style.display = 'inline-block';
+    document.getElementById('dlSvg').style.display = 'inline-block';
+  }
+
+  // Downloads
+  document.getElementById('dlPng').addEventListener('click', () => {
+    if (qrCode) qrCode.download({ name: 'dotqr', extension: 'png' });
+  });
+
+  document.getElementById('dlSvg').addEventListener('click', () => {
+    if (qrCode) qrCode.download({ name: 'dotqr', extension: 'svg' });
+  });
+</script>
+</body>
+</html>
